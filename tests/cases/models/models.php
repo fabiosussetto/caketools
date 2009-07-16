@@ -10,7 +10,10 @@
     	var $hasMany = array('Attachment', 'Image');
     	
     	function afterFind($results, $primary = false) {
-    	    $results = $this->Image->Behaviors->FgImageUpload->afterFind($this->Image, $results, $primary);
+    	    if ($this->Image->Behaviors->attached('FgImageUpload')) {
+    	        $results = $this->Image->Behaviors->FgImageUpload->afterFind($this->Image, $results, $primary);
+	        }
+	        
     	    return $results;
     	}
     }

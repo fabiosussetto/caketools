@@ -26,7 +26,7 @@ class FgImageUploadBehavior extends FgUploadBehavior {
 
     function beforeDelete(&$Model) {
         $data = $Model->read();
-        $filename = $data[$Model->alias]['filename'];
+        $filename = $data[$Model->alias][$this->settings[$Model->alias]['fileField']];
         $this->deleteVersions($Model, $filename);
         
         parent::beforeDelete($Model);
@@ -59,7 +59,7 @@ class FgImageUploadBehavior extends FgUploadBehavior {
         
         // if we are replacing the file, clear previous versions
         if (!empty($Model->id)) {
-            $this->deleteVersions($Model, $Model->field('filename'));
+            $this->deleteVersions($Model, $Model->field($this->settings[$Model->alias]['fileField']));
         }
         
         $this->saveVersion($Model, $uploadedFile);
@@ -124,51 +124,33 @@ class FgImageUploadBehavior extends FgUploadBehavior {
                 $versions = array();
                 $hasMany = true;
                 
-                // Make all results structures similar to simplify result manipulation
-                if (!isset($result[$Model->alias][0])) {
-                    $hasMany = false;
-                    $result[$Model->alias] = array($result[$Model->alias]);
-                }
-             
-                foreach ($result[$Model->alias] as $k => $row) {
-                    if (isset($row['original'])) {
-                        $result[$Model->alias][$k] = am($row, $this->versionData($Model, $row['original']));
+                if (isset($result[$Model->alias])) {
+                    // Make all results structures similar to simplify result manipulation
+                    if (!isset($result[$Model->alias][0])) {
+                        $hasMany = false;
+                        $result[$Model->alias] = array($result[$Model->alias]);
                     }
+                 
+                    foreach ($result[$Model->alias] as $k => $row) {
+                        if (isset($row['original'])) {
+                            $result[$Model->alias][$k] = am($row, $this->versionData($Model, $row['original']));
+                        }
+                    }
+                    
+                    // if necessary, revert to previous results structure
+                    if (!$hasMany) {
+                        $result[$Model->alias] = $result[$Model->alias][0];
+                    }
+                    
+                    // append versions to real results
+                    $results[$n] = $result;
                 }
-                
-                // if necessary, revert to previous results structure
-                if (!$hasMany) {
-                    $result[$Model->alias] = $result[$Model->alias][0];
-                }
-                
-                // append versions to real results
-                $results[$n] = $result;
             }
         }  
         
         $this->findQueryType = null;
         return $results;
     }
-    
-    /*function afterFind(&$Model, $results, $primary = false) { 
-        if (!empty($results) && $this->findQueryType != 'list' && $this->findQueryType != 'count') {
-            foreach ($results as $n => $result) {
-                $versions = array();
-                if (is_array($result[$Model->alias][0])) {
-                    foreach ($result[$Model->alias][0] as $k => $row) {
-                        if (isset($row['original'])) {
-                            $results[$n][$Model->alias][]['Versions'] = $this->versionData($Model, $row['original']);
-                        }
-                    }
-                } else {
-                    
-                }
-            }
-        }  
-        
-        $this->findQueryType = null;
-        return $results;
-    }*/
     
     function reprocess(&$Model, $newVersions = null, $id = null) {
         if (!$Model->id) {
@@ -176,15 +158,19 @@ class FgImageUploadBehavior extends FgUploadBehavior {
         }
         
         $data = $Model->read();
-        $original = $this->uploadFolder($Model) . $data[$Model->alias]['filename'];
+        $original = $this->uploadFolder($Model) . $data[$Model->alias][$this->settings[$Model->alias]['fileField']];
         
         $this->deleteVersions($Model, $original);
         $this->saveVersion($Model, $original, $newVersions);
     }
     
-    function reprocessAll(&$Model, $data, $newVersions) {
+    function reprocessAll(&$Model, $data, $newVersions = null) {
+        if (!$newVersions) {
+            $newVersions = $this->settings[$Model->alias]['versions'];
+        }
+        
         foreach ($data as $row) {
-            $original = $this->uploadFolder($Model) . $row[$Model->alias]['filename'];
+            $original = $this->uploadFolder($Model) . $row[$Model->alias][$this->settings[$Model->alias]['fileField']];
             $this->deleteVersions($Model, $original);
             $this->saveVersion($Model, $original, $newVersions);
         }

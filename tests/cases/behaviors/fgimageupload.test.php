@@ -47,7 +47,6 @@ class FgImageUploadBehaviorTest extends CakeTestCase {
 		copy($this->tmpFolder . 'my_image.jpg', $this->uploadVersionPath . 'thumb_my_image.jpg');
 		copy($this->tmpFolder . 'my_image.jpg', $this->uploadVersionPath . 'medium_my_image.png');
 		
-		
 		// setup versions and error messages
 		$versions = array(
     	    'thumb' => array(
@@ -361,8 +360,8 @@ class FgImageUploadBehaviorTest extends CakeTestCase {
 	
 	function testAfterFindFromRelated() {
 	    $results = $this->Post->find('all');
-	    
-	    debug($results);
+	    $this->assertEqual($results[0]['Image'][0]['thumb'], '/uploaded_images/thumb_my_image.jpg');
+	    $this->assertEqual($results[0]['Image'][0]['medium'], '/uploaded_images/medium_my_image.png');
 	}
 }
 

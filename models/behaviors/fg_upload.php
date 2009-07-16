@@ -9,43 +9,50 @@ class FgUploadBehavior extends ModelBehavior {
     var $errors = array();
     var $tmpFilePath = null;
     var $fileInfo = array(); // Uploaded file info
-
+    var $filePresent = false;
+   
     var $_defaultSettings = array(
 		'forceFilePresence' => true,
+		'fileField' => 'filename',
 		'allowedMimes' => '*',
 		'allowedExt' => array('jpg', 'jpeg', 'gif', 'png', 'pdf', 'doc', 'txt'),
 		'allowedSize' => '1',
 		'allowedSizeUnit' => 'MB',
 		'overwrite' => false,
-		'fileField' => 'filename',
-		'messages' => array(
-		    'filePresence' => 'You must select a file to upload',
-		    'fileSize' => 'The file is too big',
-		    'fileExt' => 'Extension not allowed',
-		    'mimeType' => 'Mime type not allowed'
-		)
+		'fileField' => 'filename'
 	);
 	
     function setup(&$Model, $config = array()) {
-		$this->_defaultSettings[$Model->alias]['baseDir'] = APP;  
+		$this->_defaultSettings['baseDir'] = APP;
+		$this->_defaultSettings['messages'] = array(
+		    'filePresence' => __('You must select a file to upload', true),
+		    'fileSize' => __('The file is too big', true),
+		    'fileExt' => __('Extension not allowed', true),
+		    'mimeType' => __('Mime type not allowed', true)
+        );
        
         $this->settings[$Model->alias] = array_merge($this->_defaultSettings, $config);
     }
     
     function beforeSave (&$Model) {
-        if ($this->settings[$Model->alias]['forceFilePresence']) {
-            $tmpFilename = $Model->data[$Model->alias]['filename']['name'];
+        $fileField = $this->settings[$Model->alias]['fileField'];
+        
+        $this->filePresence($Model);
+        
+        if ($this->filePresent) {
+            $this->tmpFilePath = $Model->data[$Model->alias][$fileField]['tmp_name'];
+            $tmpFilename = $Model->data[$Model->alias][$fileField]['name'];
             
             $destFolder = $this->uploadFolder($Model);
             $filename = $this->generateFilename(
-                $tmpFilename, $destFolder, $this->settings[$Model->alias]['overwrite']
+                $Model->data[$Model->alias][$fileField]['name'], $destFolder, $this->settings[$Model->alias]['overwrite']
             );
-             
+            
             $destPath = $destFolder . $filename;
             
             $Folder = new Folder();
             $Folder->create($destFolder, '0755');
-            
+    
             if (defined('CAKEPHP_UNIT_TEST_EXECUTION')) {
                 copy($this->tmpFilePath, $destPath);
             } else {
@@ -55,22 +62,41 @@ class FgUploadBehavior extends ModelBehavior {
             $this->fileInfo['folder'] = $destFolder;
             $this->fileInfo['filename'] = $filename;
             
+            // If we are updating, delete previous attachment
+            if (!empty($Model->id)) {
+                $oldFile = $this->uploadFolder($Model) . $Model->field($fileField);
+                if (file_exists($oldFile)) {
+                    unlink($oldFile);
+                }
+            }
+            
             // Set metadata to save in db
-            $Model->data[$Model->alias]['filename'] = $filename;
-            $Model->data[$Model->alias]['original'] = $destPath;
+            $Model->data[$Model->alias][$fileField] = $filename;
+        }
+        
+        if (isset($Model->data[$Model->alias][$fileField]) && is_array($Model->data[$Model->alias][$fileField])) {
+            unset($Model->data[$Model->alias][$fileField]);
         }
         
         return true;
     }
     
+    function filePresence(&$Model) {
+        $fileField = $this->settings[$Model->alias]['fileField'];
+        $this->filePresent = false;
+        
+        if (isset($Model->data[$Model->alias][$fileField])
+            && is_array($Model->data[$Model->alias][$fileField])
+            && $Model->data[$Model->alias][$fileField]['error'] == 0
+        ) {
+            $this->filePresent = true;       
+        }    
+    }
+    
     function beforeValidate(&$Model) {
         extract($this->settings[$Model->alias]);
-        
-        if ( isset($Model->data[$Model->alias]['filename']) && 
-             !empty($Model->data[$Model->alias]['filename'])
-        ) {
-            $this->tmpFilePath = $Model->data[$Model->alias]['filename']['tmp_name'];
-        }
+       
+        $this->filePresence($Model);
         
         $rules = array();
         
@@ -84,40 +110,55 @@ class FgUploadBehavior extends ModelBehavior {
 			);
         }
         
-		$rules['fileSize'] = array(
-			'rule' => 'validateFileSize',
-			'message' => $messages['fileSize'],
-			'last' => true
-		);
-		
-		if ($allowedExt != '*') {
-    		$rules['fileExt'] = array(
-    			'rule' => array('extension', $allowedExt),
-    			'message' => $messages['fileExt'],
+        if ($this->filePresent) {
+    		$rules['fileSize'] = array(
+    			'rule' => 'validateFileSize',
+    			'message' => $messages['fileSize'],
     			'last' => true
     		);
-	    }
-	    
-	    $rules['mimeType'] = array(
-			'rule' => 'validateMimeType',
-			'message' => $messages['mimeType'],
-			'last' => true
-		);
+    		
+    		if ($allowedExt != '*') {
+        		$rules['fileExt'] = array(
+        			'rule' => array('extension', $allowedExt),
+        			'message' => $messages['fileExt'],
+        			'last' => true
+        		);
+    	    }
+    	    
+    	    $rules['mimeType'] = array(
+    			'rule' => 'validateMimeType',
+    			'message' => $messages['mimeType'],
+    			'last' => true
+    		);
+    	}
         
-        $Model->validate['filename'] = $rules;
+        $Model->validate[$fileField] = $rules;
         
         return true;
 	}
 	
 	function beforeDelete(&$Model) {
 	    $data = $Model->read();
-	    unlink($this->uploadFolder($Model) . $data[$Model->alias]['filename']);
+	    $file = $this->uploadFolder($Model) . $data[$Model->alias][$this->settings[$Model->alias]['fileField']];
+	    
+	    if (file_exists($file)) {
+	        unlink($file);
+	    }
+	}
+	
+	function deleteAttachment(&$Model, $id = null) {
+	    if ($id) {
+	        $Model->id = $id;
+	    }
+	    
+	    $this->beforeDelete($Model);
+	    $Model->saveField($this->settings[$Model->alias]['fileField'], '');
 	}
 	
 	/* Validation functions */
 	
 	function validateFilePresence(&$Model, $fieldData) {
-	    if ($fieldData['filename']['error'] == UPLOAD_ERR_NO_FILE) {
+	    if ($fieldData[$this->settings[$Model->alias]['fileField']]['error'] != 0) {
 	        return false;
 	    }
 	    
@@ -133,7 +174,7 @@ class FgUploadBehavior extends ModelBehavior {
 	        default : $maxSize = 1024 * $allowedSize; break;
 	    }
 	    
-	    if ($fieldData['filename']['size'] > $maxSize) {
+	    if ($fieldData[$fileField]['size'] > $maxSize) {
 	        return false;
 	    }
 	    
@@ -146,7 +187,7 @@ class FgUploadBehavior extends ModelBehavior {
 	    */
         extract($this->settings[$Model->alias]);
         
-        if ($allowedMimes == '*' || in_array($fieldData['filename']['type'], $allowedMimes)) {
+        if ($allowedMimes == '*' || in_array($fieldData[$fileField]['type'], $allowedMimes)) {
             return true;
         }    
         
@@ -182,7 +223,6 @@ class FgUploadBehavior extends ModelBehavior {
         
         return $filename;
     }
-
 }
 
 ?>

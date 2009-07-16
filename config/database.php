@@ -7,7 +7,7 @@ class DATABASE_CONFIG {
 		'host' => 'localhost',
 		'login' => 'root',
 		'password' => '',
-		'database' => 'fgupload',
+		'database' => 'caketools',
 		'encoding' => 'utf8'
 	);
 	
@@ -17,7 +17,7 @@ class DATABASE_CONFIG {
 		'host' => 'localhost',
 		'login' => 'root',
 		'password' => '',
-		'database' => 'fgupload_test',
+		'database' => 'caketools_test',
 		'encoding' => 'utf8'
 	);
 }
