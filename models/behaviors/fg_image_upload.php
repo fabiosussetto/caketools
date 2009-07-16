@@ -119,6 +119,8 @@ class FgImageUploadBehavior extends FgUploadBehavior {
     }
     
     function afterFind(&$Model, $results, $primary = false) { 
+        $fileField = $this->settings[$Model->alias]['fileField'];
+        
         if (!empty($results) && $this->findQueryType != 'list' && $this->findQueryType != 'count') {
             foreach ($results as $n => $result) {
                 $versions = array();
@@ -132,8 +134,8 @@ class FgImageUploadBehavior extends FgUploadBehavior {
                     }
                  
                     foreach ($result[$Model->alias] as $k => $row) {
-                        if (isset($row['original'])) {
-                            $result[$Model->alias][$k] = am($row, $this->versionData($Model, $row['original']));
+                        if (isset($row[$fileField])) {
+                            $result[$Model->alias][$k] = am($row, $this->versionData($Model, $row[$fileField]));
                         }
                     }
                     

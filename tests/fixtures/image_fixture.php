@@ -11,7 +11,6 @@ class ImageFixture extends CakeTestFixture {
     		'id' => array('type'=>'integer', 'null' => false, 'default' => NULL, 'key' => 'primary'),
     		'title' => array('type'=>'string', 'null' => false, 'default' => NULL, 'length' => 50),
     		'filename' => array('type'=>'string', 'null' => false, 'default' => NULL, 'length' => 50),
-    		'original' => array('type'=>'string', 'null' => false, 'default' => NULL),
     		'post_id' => array('type'=>'integer', 'null' => false, 'default' => NULL),
     		'indexes' => array('PRIMARY' => array('column' => 'id', 'unique' => 1))
     	);        	
@@ -25,8 +24,7 @@ class ImageFixture extends CakeTestFixture {
 	    
 	    $this->records = array(
 	        array(
-	           'id' => 1, 'title' => 'My image', 'filename' => 'my_image.jpg', 'original' => $this->path . 'my_image.jpg',
-	           'post_id' => 1
+	           'id' => 1, 'title' => 'My image', 'filename' => 'my_image.jpg', 'post_id' => 1
 	        ) 
     	);
 	}

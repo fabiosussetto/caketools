@@ -247,6 +247,9 @@ class FgImageUploadBehaviorTest extends CakeTestCase {
 	    $this->assertTrue($this->Image->save($data));
 	    $this->assertTrue(file_exists($this->uploadVersionPath . 'thumb_test_image.jpg'));
 	    $this->assertTrue(file_exists($this->uploadVersionPath . 'medium_test_image.png'));
+	    
+	    $results = $this->Image->read();
+	    $this->assertEqual($results['Image']['thumb'], '/uploaded_images/thumb_test_image.jpg');
 	}
 	
 
