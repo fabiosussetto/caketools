@@ -74,3 +74,4 @@
 2009-07-16 16:10:21 Warning: Warning (2): Cannot modify header information - headers already sent by (output started at C:\xampp\htdocs\sandbox\caketools\webroot\index.php:57) in [CORE\cake\dispatcher.php, line 642]
 2009-07-16 16:10:21 Warning: Warning (2): Cannot modify header information - headers already sent by (output started at C:\xampp\htdocs\sandbox\caketools\webroot\index.php:57) in [CORE\cake\dispatcher.php, line 643]
 2009-07-16 16:10:21 Warning: Warning (2): Cannot modify header information - headers already sent by (output started at C:\xampp\htdocs\sandbox\caketools\webroot\index.php:57) in [CORE\cake\dispatcher.php, line 644]
+2009-07-17 02:51:23 Warning: Warning (512): <span style = "color:Red;text-align:left"><b>SQL Error:</b> 1146: Table 'caketools_test.images' doesn't exist</span> in [CORE\cake\libs\model\datasources\dbo_source.php, line 525]

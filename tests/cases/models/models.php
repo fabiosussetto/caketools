@@ -22,4 +22,23 @@
     	var $name = 'Image';
     	var $belongsTo = array('Post');
     }
+    
+    class Article extends CakeTestModel {
+    	var $name = 'Article';
+    }
+    
+    class Tag extends CakeTestModel {
+    	var $name = 'Tag';
+    	
+        var $validate = array(
+            'name' => array(
+                'invalidChars' => array(
+                    'rule' => array('custom', '/^[a-z0-9\ \.]{3,}$/i'),
+                    'message' => 'Invalid chars'
+                )
+            )
+    	);        
+        
+
+    }
 ?>

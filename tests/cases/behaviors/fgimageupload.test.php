@@ -250,6 +250,7 @@ class FgImageUploadBehaviorTest extends CakeTestCase {
 	    
 	    $results = $this->Image->read();
 	    $this->assertEqual($results['Image']['thumb'], '/uploaded_images/thumb_test_image.jpg');
+	    $this->assertEqual($results['Image']['medium'], '/uploaded_images/medium_test_image.png');
 	}
 	
 
